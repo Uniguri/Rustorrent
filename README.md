@@ -8,6 +8,7 @@ Torrent Client with rust
 - [ ] Decoded Torrent file parser
 - [ ] Get peer information from tracker
   - [ ] Using HTTP
+  - [ ] Using HTTPS
   - [ ] Using UDP
 - [ ] Receive pieces from peer
   - [ ] Handshake
@@ -17,8 +18,9 @@ Torrent Client with rust
   - [ ] Send pieces
 - [ ] Combine pieces into whole file
 - [ ] Addtional
-  - [ ] Implement using UDP
+  - [ ] Implement P2P using uTP
   - [ ] Implement using asynchronization
+  - [ ] Implement Accepted BEPs
 
 # Reference
 
