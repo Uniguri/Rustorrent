@@ -1,0 +1,7 @@
+[package]
+name = "bencode_decoder"
+version = "0.1.0"
+authors = ["Ju Chanhyoung <ju031230321@gmail.com>"]
+edition = "2021"
+
+[dependencies]
