@@ -17,6 +17,8 @@ pub enum Element {
 ///
 /// # Example
 ///
+/// For convenience, below examples use `ascii_num` as `&str`.
+///
 /// - `decode_u64("1234", &mut len)` returns `Some(1234)` and `len` must be 4.
 /// - `decode_u64("1234+1234", &mut len)` returns `Some(1234)` and len must be 4.
 /// - `decode_u64("1234abcd", &mut len)` returns `Some(1234)` and len must be 4.
