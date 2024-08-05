@@ -2,12 +2,91 @@ use std::collections::HashMap;
 
 mod utils;
 
+use crate::utils::*;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Element {
     ByteString(Vec<u8>),
     Integer(i64),
     List(Vec<Element>),
     Dictionary(HashMap<String, Element>),
+}
+
+#[allow(dead_code)]
+impl Element {
+    pub fn convert_to_ref_vec_u8(&self) -> Option<&Vec<u8>> {
+        if let Element::ByteString(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    pub fn convert_to_str(&self) -> Option<&str> {
+        if let Element::ByteString(x) = self {
+            core::str::from_utf8(x).ok()
+        } else {
+            None
+        }
+    }
+
+    pub fn convert_to_string(&self) -> Option<String> {
+        Some(self.convert_to_str()?.to_string())
+    }
+
+    pub fn convert_to_i64(&self) -> Option<i64> {
+        if let Element::Integer(x) = self {
+            Some(*x)
+        } else {
+            None
+        }
+    }
+
+    pub fn convert_to_u64(&self) -> Option<u64> {
+        if let Some(x) = self.convert_to_i64() {
+            Some(x as u64)
+        } else {
+            None
+        }
+    }
+
+    pub fn convert_to_string_list(&self) -> Option<Vec<String>> {
+        if let Element::List(x) = self {
+            x.iter().map(|y| y.convert_to_string()).collect()
+        } else {
+            None
+        }
+    }
+
+    pub fn convert_to_ref_list(&self) -> Option<&Vec<Element>> {
+        if let Element::List(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    pub fn convert_to_list(&self) -> Option<Vec<Element>> {
+        match self.convert_to_ref_list() {
+            Some(x) => Some(x.clone()),
+            None => None,
+        }
+    }
+
+    pub fn convert_to_ref_dict(&self) -> Option<&HashMap<String, Element>> {
+        if let Element::Dictionary(x) = self {
+            Some(x)
+        } else {
+            None
+        }
+    }
+
+    pub fn convert_to_dict(&self) -> Option<HashMap<String, Element>> {
+        match self.convert_to_ref_dict() {
+            Some(x) => Some(x.clone()),
+            None => None,
+        }
+    }
 }
 
 fn decode_bytesstring(bencode: &[u8], len: &mut usize) -> Option<Element> {
@@ -17,7 +96,7 @@ fn decode_bytesstring(bencode: &[u8], len: &mut usize) -> Option<Element> {
     }
 
     let mut bytes_len_len = 0;
-    let bytes_len = crate::utils::decode_u64(&bencode[0..], &mut bytes_len_len)? as usize;
+    let bytes_len = decode_u64(&bencode[0..], &mut bytes_len_len)? as usize;
     let start_idx = bytes_len_len + 1;
     let end_idx = start_idx + bytes_len;
     if start_idx > bencode.len() || bencode[bytes_len_len] != b':' || end_idx > bencode.len() {
@@ -36,7 +115,7 @@ fn decode_integer(bencode: &[u8], len: &mut usize) -> Option<Element> {
     }
 
     let mut int_len = 0;
-    let int = crate::utils::decode_i64(&bencode[1..], &mut int_len)?;
+    let int = decode_i64(&bencode[1..], &mut int_len)?;
     if 1 + int_len >= bencode.len() || bencode[1 + int_len] != b'e' {
         return None;
     }
@@ -77,16 +156,12 @@ fn decode_dictionary(bencode: &[u8], len: &mut usize) -> Option<Element> {
     let mut idx = 1;
     while idx < bencode.len() && bencode[idx] != b'e' {
         let mut key_len = 0;
-        let dict_key;
-        if let Some(Element::ByteString(key)) = decode_bytesstring(&bencode[idx..], &mut key_len) {
-            dict_key = String::from_utf8(key).ok()?;
-            idx += key_len;
-            if idx >= bencode.len() {
-                return None;
-            }
-        } else {
+        let dict_key = decode_bytesstring(&bencode[idx..], &mut key_len)?.convert_to_string()?;
+        idx += key_len;
+        if idx >= bencode.len() {
             return None;
         }
+
         let mut val_len = 0;
         let dict_val = decode_all(&bencode[idx..], &mut val_len)?;
         idx += val_len;
@@ -144,7 +219,7 @@ pub fn decode_len_check(bencode: &[u8]) -> Option<Element> {
 ///
 /// # Arguments
 /// * `bencode` - bencoded data **without** spaces.
-pub fn decode_no_check(bencode: &[u8]) -> Option<Element> {
+pub fn decode_no_len_check(bencode: &[u8]) -> Option<Element> {
     let mut len = 0;
     decode_all(bencode, &mut len)
 }
