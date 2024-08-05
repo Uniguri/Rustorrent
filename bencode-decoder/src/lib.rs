@@ -149,27 +149,6 @@ pub fn decode_no_check(bencode: &[u8]) -> Option<Element> {
     decode_all(bencode, &mut len)
 }
 
-#[allow(dead_code)]
-/// Decode bencoded data.
-/// The length of decoded data must be same as the length of input.
-///
-/// # Arguments
-/// * `bencode` - bencoded data.
-pub fn decode_with_spaces_len_check(bencode: &[u8]) -> Option<Element> {
-    let without_spaces = crate::utils::erase_whitespaces(bencode);
-    decode_len_check(&without_spaces)
-}
-
-#[allow(dead_code)]
-/// Decode bencoded data.
-///
-/// # Arguments
-/// * `bencode` - bencoded data.
-pub fn decode_with_spaces_no_len_check(bencode: &[u8]) -> Option<Element> {
-    let without_spaces = crate::utils::erase_whitespaces(bencode);
-    decode_no_check(&without_spaces)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

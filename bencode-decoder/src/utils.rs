@@ -1,18 +1,3 @@
-pub fn is_not_whitespace(c: u8) -> bool {
-    match c {
-        b' ' | b'\r' | b'\n' | b'\t' => false,
-        _ => true,
-    }
-}
-
-pub fn erase_whitespaces(input: &[u8]) -> Vec<u8> {
-    input
-        .iter()
-        .filter(|x| is_not_whitespace(**x))
-        .copied()
-        .collect()
-}
-
 /// Decode slice to u64.
 /// This function does not allow numbers starting with '+'.
 ///
@@ -139,24 +124,6 @@ pub fn decode_i64(ascii_num: &[u8], len: &mut usize) -> Option<i64> {
 mod tests {
     use super::*;
 
-    mod erase_whitespaces_test {
-        use super::*;
-
-        fn helper(input: &str, expect: &str) {
-            let result = erase_whitespaces(input.as_bytes());
-            assert_eq!(result, expect.as_bytes());
-        }
-
-        #[test]
-        fn erase_whitespaces_01() {
-            helper("a b c   t", "abct");
-        }
-
-        #[test]
-        fn erase_whitespaces_02() {
-            helper("a \r b \n c", "abc");
-        }
-    }
     mod decode_u64_test {
         use super::*;
 
