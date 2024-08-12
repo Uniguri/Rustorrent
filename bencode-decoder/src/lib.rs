@@ -18,7 +18,7 @@ impl Element {
         if let Element::ByteString(x) = self {
             Ok(x)
         } else {
-            Err("[Error] No ByteString")
+            Err("Element is not a ByteString")
         }
     }
 
@@ -26,7 +26,7 @@ impl Element {
         if let Element::ByteString(x) = self {
             Ok(core::str::from_utf8(x).unwrap())
         } else {
-            Err("[Error] No str")
+            Err("Element is not a str")
         }
     }
 
@@ -38,7 +38,7 @@ impl Element {
         if let Element::Integer(x) = self {
             Ok(*x)
         } else {
-            Err("[Error] No i64")
+            Err("Element is not a Integer")
         }
     }
 
@@ -46,7 +46,7 @@ impl Element {
         if let Ok(x) = self.convert_to_i64() {
             Ok(x as u64)
         } else {
-            Err("[Error] No u64")
+            Err("Element is not a Integer")
         }
     }
 
@@ -54,7 +54,7 @@ impl Element {
         if let Element::List(x) = self {
             x.iter().map(|y| y.convert_to_string()).collect()
         } else {
-            Err("[Error] No String list")
+            Err("Element is not a String List")
         }
     }
 
@@ -62,7 +62,7 @@ impl Element {
         if let Element::List(x) = self {
             Ok(x)
         } else {
-            Err("[Error] No ref list")
+            Err("Element is not a List")
         }
     }
 
@@ -77,7 +77,7 @@ impl Element {
         if let Element::Dictionary(x) = self {
             Ok(x)
         } else {
-            Err("[Error] No ref dictionary")
+            Err("Element is not a Dictionary")
         }
     }
 
@@ -92,7 +92,7 @@ impl Element {
 fn decode_bytesstring(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str> {
     if bencode.len() == 0 {
         *len = 0;
-        return Err("[Error] No data");
+        return Err("Bencode has no ByteString");
     }
 
     let mut bytes_len_len = 0;
@@ -100,7 +100,7 @@ fn decode_bytesstring(bencode: &[u8], len: &mut usize) -> Result<Element, &'stat
     let start_idx = bytes_len_len + 1;
     let end_idx = start_idx + bytes_len;
     if start_idx > bencode.len() || bencode[bytes_len_len] != b':' || end_idx > bencode.len() {
-        return Err("[Error] No data");
+        return Err("Bencode has a corrupted ByteString");
     }
 
     let bytes = &bencode[start_idx..(end_idx)];
@@ -111,13 +111,13 @@ fn decode_bytesstring(bencode: &[u8], len: &mut usize) -> Result<Element, &'stat
 fn decode_integer(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str> {
     if bencode.len() < 3 || bencode[0] != b'i' {
         *len = 0;
-        return Err("[Error] No data");
+        return Err("Bencode has no Integer");
     }
 
     let mut int_len = 0;
     let int = decode_i64(&bencode[1..], &mut int_len)?;
     if 1 + int_len >= bencode.len() || bencode[1 + int_len] != b'e' {
-        return Err("[Error]");
+        return Err("Bencode has a corrupted Integer");
     }
     *len = int_len + 2;
     return Ok(Element::Integer(int));
@@ -126,7 +126,7 @@ fn decode_integer(bencode: &[u8], len: &mut usize) -> Result<Element, &'static s
 fn decode_list(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str> {
     if bencode.len() < 2 || bencode[0] != b'l' {
         *len = 0;
-        return Err("[Error] No data");
+        return Err("Bencode has no List");
     }
 
     let mut list = Vec::<Element>::new();
@@ -140,7 +140,7 @@ fn decode_list(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str>
 
     if bencode[idx] != b'e' {
         *len = idx;
-        return Err("[Error]");
+        return Err("Bencode has a corrupted List");
     }
     *len = idx + 1;
     return Ok(Element::List(list));
@@ -149,7 +149,7 @@ fn decode_list(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str>
 fn decode_dictionary(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str> {
     if bencode.len() < 2 || bencode[0] != b'd' {
         *len = 0;
-        return Err("[Error] No data");
+        return Err("Bencode has no Dictionary");
     }
 
     let mut dict = HashMap::<String, Element>::new();
@@ -159,7 +159,7 @@ fn decode_dictionary(bencode: &[u8], len: &mut usize) -> Result<Element, &'stati
         let dict_key = decode_bytesstring(&bencode[idx..], &mut key_len)?.convert_to_string()?;
         idx += key_len;
         if idx >= bencode.len() {
-            return Err("[Error] No data");
+            return Err("Bencode has a corrupted Dictionary");
         }
 
         let mut val_len = 0;
@@ -169,7 +169,7 @@ fn decode_dictionary(bencode: &[u8], len: &mut usize) -> Result<Element, &'stati
     }
 
     if bencode[idx] != b'e' {
-        return Err("[Error]");
+        return Err("Bencode has a corrupted Dictionary");
     }
     *len = idx + 1;
     return Ok(Element::Dictionary(dict));
@@ -177,7 +177,7 @@ fn decode_dictionary(bencode: &[u8], len: &mut usize) -> Result<Element, &'stati
 
 fn decode_all(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str> {
     if bencode.len() == 0 {
-        return Err("[Error] No data");
+        return Err("Bencode has no data");
     }
 
     match bencode[0] {
@@ -194,7 +194,7 @@ fn decode_all(bencode: &[u8], len: &mut usize) -> Result<Element, &'static str> 
             return decode_dictionary(bencode, len);
         }
         b'e' | _ => {
-            return Err("[Error]");
+            return Err("Bencode has corrupted data");
         }
     }
 }
@@ -209,7 +209,7 @@ pub fn decode_len_check(bencode: &[u8]) -> Result<Element, &str> {
     let mut len = 0;
     let ret = decode_all(bencode, &mut len);
     if len != bencode.len() {
-        return Err("[Error] No data");
+        return Err("No data");
     }
     return ret;
 }
@@ -251,12 +251,12 @@ mod tests {
 
         #[test]
         fn decode_len_check_03() {
-            helper("5:abcdef", Err("[Error] No data"));
+            helper("5:abcdef", Err("No data"));
         }
 
         #[test]
         fn decode_len_check_04() {
-            helper("10:abcdef", Err("[Error] No data"));
+            helper("10:abcdef", Err("No data"));
         }
 
         #[test]
@@ -266,7 +266,7 @@ mod tests {
 
         #[test]
         fn decode_len_check_06() {
-            helper("i-0e", Err("[Error] No data"));
+            helper("i-0e", Err("No data"));
         }
 
         #[test]
@@ -281,7 +281,7 @@ mod tests {
 
         #[test]
         fn decode_len_check_09() {
-            helper("i0123e", Err("[Error] No data"));
+            helper("i0123e", Err("No data"));
         }
 
         #[test]
@@ -314,10 +314,7 @@ mod tests {
 
         #[test]
         fn decode_len_check_13() {
-            helper(
-                "de",
-                Ok(Element::Dictionary([].iter().cloned().collect())),
-            );
+            helper("de", Ok(Element::Dictionary([].iter().cloned().collect())));
         }
 
         #[test]

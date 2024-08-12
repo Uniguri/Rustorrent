@@ -20,7 +20,7 @@
 pub fn decode_u64(ascii_num: &[u8], len: &mut usize) -> Result<u64, &'static str> {
     if ascii_num.len() == 0 {
         *len = 0;
-        return Err("[Error] No data");
+        return Err("Ascii number has no data");
     } else if ascii_num.len() >= 2 && ascii_num[0] == b'0' {
         *len = 1;
         return Ok(0);
@@ -32,8 +32,10 @@ pub fn decode_u64(ascii_num: &[u8], len: &mut usize) -> Result<u64, &'static str
             b'0'..=b'9' => {
                 *len += 1;
 
-                num = num.checked_mul(10).ok_or("[Error] Multiplication overflow")?;
-                num = num.checked_add((cur - b'0') as u64).ok_or("[Error] Addition overflow")?;
+                num = num.checked_mul(10).ok_or("Multiplication overflow")?;
+                num = num
+                    .checked_add((cur - b'0') as u64)
+                    .ok_or("Addition overflow")?;
             }
             _ => {
                 break;
@@ -41,8 +43,8 @@ pub fn decode_u64(ascii_num: &[u8], len: &mut usize) -> Result<u64, &'static str
         }
     }
 
-    if num == 0 && (*len == 0 || *len > 1) {
-        return Err("[Error] No data");
+    if num == 0 && (*len != 1) {
+        return Err("Ascii number is not allowed number");
     }
 
     return Ok(num);
@@ -71,7 +73,7 @@ pub fn decode_u64(ascii_num: &[u8], len: &mut usize) -> Result<u64, &'static str
 /// - `decode_u64("-9223372036854775809", &mut len)` returns `None` and `len` must be 20. Note that `-9223372036854775809` is `i64::MIN - 1`.
 pub fn decode_i64(ascii_num: &[u8], len: &mut usize) -> Result<i64, &'static str> {
     if ascii_num.len() == 0 {
-        return Err("[Error] No data");
+        return Err("Ascii number has no data");
     }
 
     let is_positive;
@@ -100,13 +102,13 @@ pub fn decode_i64(ascii_num: &[u8], len: &mut usize) -> Result<i64, &'static str
         if num <= i64::MAX as u64 {
             return Ok(num as i64);
         } else {
-            return Err("[Error]");
+            return Err("Ascii number is bigger than i64::MAX");
         }
     } else {
         match num.cmp(&(i64::MIN as u64)) {
             std::cmp::Ordering::Less => {
                 if num == 0 {
-                    return Err("[Error]");
+                    return Err("Ascii number is not allowed number(-0)");
                 }
                 return Ok(-(num as i64));
             }
@@ -114,7 +116,7 @@ pub fn decode_i64(ascii_num: &[u8], len: &mut usize) -> Result<i64, &'static str
                 return Ok(i64::MIN);
             }
             std::cmp::Ordering::Greater => {
-                return Err("[Error]");
+                return Err("Ascii number is smaller than i64::MIN");
             }
         }
     }
@@ -149,13 +151,13 @@ mod tests {
         #[test]
         fn decode_u64_03() {
             let s = "";
-            helper(s, Err("[Error] No data"), s.len());
+            helper(s, Err("Ascii number has no data"), s.len());
         }
 
         #[test]
         fn decode_u64_04() {
             let s = "-1";
-            helper(s, Err("[Error] No data"), 0);
+            helper(s, Err("Ascii number is not allowed number"), 0);
         }
 
         #[test]
@@ -169,7 +171,7 @@ mod tests {
         fn decode_u64_06() {
             let ss = (u64::MAX as u128 + 1).to_string();
             let s = ss.as_str();
-            helper(s, Err("[Error] Addition overflow"), s.len());
+            helper(s, Err("Addition overflow"), s.len());
         }
 
         #[test]
@@ -221,7 +223,7 @@ mod tests {
         #[test]
         fn decode_i64_03() {
             let s = "";
-            helper(s, Err("[Error] No data"), s.len());
+            helper(s, Err("Ascii number has no data"), s.len());
         }
 
         #[test]
@@ -239,7 +241,7 @@ mod tests {
         #[test]
         fn decode_i64_07() {
             let s = "+1234";
-            helper(s, Err("[Error] No data"), 0); // +<integer> is not allowed.
+            helper(s, Err("Ascii number is not allowed number"), 0); // +<integer> is not allowed.
         }
 
         #[test]
@@ -253,7 +255,7 @@ mod tests {
         fn decode_i64_09() {
             let ss = (i64::MAX as u64 + 1).to_string();
             let s = ss.as_str();
-            helper(s, Err("[Error]"), s.len());
+            helper(s, Err("Ascii number is bigger than i64::MAX"), s.len());
         }
 
         #[test]
@@ -267,7 +269,7 @@ mod tests {
         fn decode_i64_11() {
             let ss = (i64::MIN as i128 - 1).to_string();
             let s = ss.as_str();
-            helper(s, Err("[Error]"), s.len());
+            helper(s, Err("Ascii number is smaller than i64::MIN"), s.len());
         }
 
         #[test]
@@ -279,19 +281,19 @@ mod tests {
         #[test]
         fn decode_i64_13() {
             let s = "-0";
-            helper(s, Err("[Error]"), 2);
+            helper(s, Err("Ascii number is not allowed number(-0)"), 2);
         }
 
         #[test]
         fn decode_i64_14() {
             let s = "-+";
-            helper(s, Err("[Error] No data"), 1);
+            helper(s, Err("Ascii number is not allowed number"), 1);
         }
 
         #[test]
         fn decode_i64_15() {
             let s = "--+1234";
-            helper(s, Err("[Error] No data"), 1);
+            helper(s, Err("Ascii number is not allowed number"), 1);
         }
     }
 }
