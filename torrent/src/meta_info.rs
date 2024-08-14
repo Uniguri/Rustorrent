@@ -208,11 +208,11 @@ pub enum FileInfo {
 pub struct MetaInfo {
     pub info: FileInfo,
     pub announce: String,
-    pub announce_list: Result<Vec<Vec<String>>, &'static str>,
-    pub creation_date: Result<u64, &'static str>,
-    pub comment: Result<String, &'static str>,
-    pub created_by: Result<String, &'static str>,
-    pub encoding: Result<String, &'static str>,
+    pub announce_list: Option<Vec<Vec<String>>>,
+    pub creation_date: Option<u64>,
+    pub comment: Option<String>,
+    pub created_by: Option<String>,
+    pub encoding: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -221,11 +221,11 @@ impl MetaInfo {
         MetaInfo {
             info,
             announce: announce.to_string(),
-            announce_list: Err("No data"),
-            creation_date: Err("No data"),
-            comment: Err("No data"),
-            created_by: Err("No data"),
-            encoding: Err("No data"),
+            announce_list: None,
+            creation_date: None,
+            comment: None,
+            created_by: None,
+            encoding: None,
         }
     }
 }
@@ -268,25 +268,38 @@ impl MetaInfo {
         for key in hashmap.keys() {
             match key.as_str() {
                 "announce-list" => {
-                    ret.announce_list = hashmap
-                        .get(key)
-                        .ok_or("err")? // this must be Vec<Vec<String>>
-                        .convert_to_ref_list()?
-                        .iter()
-                        .map(|ve| ve.convert_to_string_list())
-                        .collect();
+                    ret.announce_list = match hashmap.get(key) {
+                        Some(x) => x
+                            .convert_to_ref_list()?
+                            .iter()
+                            .map(|ve| ve.convert_to_string_list().ok())
+                            .collect(),
+                        None => None,
+                    };
                 }
                 "creation date" => {
-                    ret.creation_date = hashmap.get(key).ok_or("err")?.convert_to_u64();
+                    ret.creation_date = match hashmap.get(key) {
+                        Some(x) => x.convert_to_u64().ok(),
+                        None => None,
+                    };
                 }
                 "comment" => {
-                    ret.comment = hashmap.get(key).ok_or("err")?.convert_to_string();
+                    ret.comment = match hashmap.get(key) {
+                        Some(x) => x.convert_to_string().ok(),
+                        None => None,
+                    };
                 }
                 "created by" => {
-                    ret.created_by = hashmap.get(key).ok_or("err")?.convert_to_string();
+                    ret.created_by = match hashmap.get(key) {
+                        Some(x) => x.convert_to_string().ok(),
+                        None => None,
+                    };
                 }
                 "encoding" => {
-                    ret.encoding = hashmap.get(key).ok_or("err")?.convert_to_string();
+                    ret.encoding = match hashmap.get(key) {
+                        Some(x) => x.convert_to_string().ok(),
+                        None => None,
+                    };
                 }
                 _ => (),
             }
