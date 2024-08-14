@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use bencode_decoder::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Default)]
-pub(crate) struct CommonFileInfo {
-    piece_length: usize,
-    pieces: Vec<Vec<u8>>,
-    is_private: bool,
+pub struct CommonFileInfo {
+    pub piece_length: usize,
+    pub pieces: Vec<Vec<u8>>,
+    pub is_private: bool,
 }
 
 #[allow(dead_code)]
@@ -38,14 +38,16 @@ impl CommonFileInfo {
     }
 
     pub fn from_dict(info_dict: &HashMap<String, Element>) -> Result<Self, &str> {
-        let piece_length = info_dict.get("piece length")
+        let piece_length = info_dict
+            .get("piece length")
             .ok_or("Missing 'piece length'")?
             .convert_to_u64()? as usize;
-    
-        let pieces = info_dict.get("pieces")
+
+        let pieces = info_dict
+            .get("pieces")
             .ok_or("Missing 'pieces'")?
             .convert_to_ref_vec_u8()?;
-    
+
         let is_private = match info_dict.get("private") {
             Some(x) => {
                 if let Ok(y) = x.convert_to_i64() {
@@ -56,17 +58,17 @@ impl CommonFileInfo {
             }
             None => false,
         };
-    
+
         Ok(CommonFileInfo::new(piece_length, pieces, is_private)?)
-    }    
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
-pub(crate) struct SingleFileInfo {
-    common_file_info: CommonFileInfo,
-    name: String,
-    length: usize,
-    md5sum: Result<String, &'static str>,
+pub struct SingleFileInfo {
+    pub common_file_info: CommonFileInfo,
+    pub name: String,
+    pub length: usize,
+    pub md5sum: Result<String, &'static str>,
 }
 
 // Default trait for SingleFileInfo structure
@@ -87,12 +89,8 @@ impl SingleFileInfo {
         common_file_info: CommonFileInfo,
         info_dict: &HashMap<String, Element>,
     ) -> Result<Self, &str> {
-        let name = info_dict.get("name")
-        .ok_or("err")?
-        .convert_to_str()?;
-        let length = info_dict.get("length")
-        .ok_or("err")?
-        .convert_to_u64()? as usize;
+        let name = info_dict.get("name").ok_or("err")?.convert_to_str()?;
+        let length = info_dict.get("length").ok_or("err")?.convert_to_u64()? as usize;
         let md5sum = match info_dict.get("md5sum") {
             Some(x) => x.convert_to_str(),
             None => Err("No MD5 sum"),
@@ -111,10 +109,10 @@ impl SingleFileInfo {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
-pub(crate) struct MultipleFileInfoFile {
-    length: usize,
-    path: Vec<String>,
-    md5sum: Result<String, &'static str>,
+pub struct MultipleFileInfoFile {
+    pub length: usize,
+    pub path: Vec<String>,
+    pub md5sum: Result<String, &'static str>,
 }
 
 // Default trait for MultipleFileInfoFile structure
@@ -146,12 +144,11 @@ impl MultipleFileInfoFile {
     }
 
     pub fn from_dict(info_dict: &HashMap<String, Element>) -> Result<Self, &str> {
-        let length = info_dict.get("length")
-        .ok_or("err")?
-        .convert_to_u64()? as usize;
-        let path = info_dict.get("path")
-        .ok_or("err")?
-        .convert_to_string_list()?;
+        let length = info_dict.get("length").ok_or("err")?.convert_to_u64()? as usize;
+        let path = info_dict
+            .get("path")
+            .ok_or("err")?
+            .convert_to_string_list()?;
         let md5sum = match info_dict.get("md5sum") {
             Some(x) => x.convert_to_str(),
             None => Err("err"),
@@ -161,10 +158,10 @@ impl MultipleFileInfoFile {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Default)]
-pub(crate) struct MultipleFileInfo {
-    common_file_info: CommonFileInfo,
-    name: String,
-    files: Vec<MultipleFileInfoFile>,
+pub struct MultipleFileInfo {
+    pub common_file_info: CommonFileInfo,
+    pub name: String,
+    pub files: Vec<MultipleFileInfoFile>,
 }
 
 #[allow(dead_code)]
@@ -183,12 +180,11 @@ impl MultipleFileInfo {
         for file in files_element {
             let file_dict = file.convert_to_dict()?;
 
-            let length = file_dict.get("length")
-            .ok_or("err")?
-            .convert_to_u64()? as usize;
-            let path = file_dict.get("path")
-            .ok_or("err")?
-            .convert_to_string_list()?;
+            let length = file_dict.get("length").ok_or("err")?.convert_to_u64()? as usize;
+            let path = file_dict
+                .get("path")
+                .ok_or("err")?
+                .convert_to_string_list()?;
             let md5sum = match file_dict.get("md5sum") {
                 Some(x) => x.convert_to_str(),
                 None => Err("err"),
@@ -203,20 +199,20 @@ impl MultipleFileInfo {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
-pub(crate) enum FileInfo {
+pub enum FileInfo {
     SingleFile(SingleFileInfo),
     MultipleFile(MultipleFileInfo),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub struct MetaInfo {
-    info: FileInfo,
-    announce: String,
-    announce_list: Result<Vec<Vec<String>>, &'static str>,
-    creation_date: Result<u64, &'static str>,
-    comment: Result<String, &'static str>,
-    created_by: Result<String, &'static str>,
-    encoding: Result<String, &'static str>,
+    pub info: FileInfo,
+    pub announce: String,
+    pub announce_list: Result<Vec<Vec<String>>, &'static str>,
+    pub creation_date: Result<u64, &'static str>,
+    pub comment: Result<String, &'static str>,
+    pub created_by: Result<String, &'static str>,
+    pub encoding: Result<String, &'static str>,
 }
 
 #[allow(dead_code)]
@@ -244,15 +240,18 @@ impl MetaInfo {
             return Err("Element is not a dictionary");
         }
 
-        let announce = hashmap.get("announce")
-        .ok_or("Missing 'announce' key")?
-        .convert_to_str()?;
-        let info_dict = hashmap.get("info")
-        .ok_or("Missing 'info' key")?
-        .convert_to_dict()?;
-        let name = info_dict.get("name")
-        .ok_or("Missing 'name' key in 'info' dictionary")?
-        .convert_to_str()?;
+        let announce = hashmap
+            .get("announce")
+            .ok_or("Missing 'announce' key")?
+            .convert_to_str()?;
+        let info_dict = hashmap
+            .get("info")
+            .ok_or("Missing 'info' key")?
+            .convert_to_dict()?;
+        let name = info_dict
+            .get("name")
+            .ok_or("Missing 'name' key in 'info' dictionary")?
+            .convert_to_str()?;
         let common_file_info = CommonFileInfo::from_dict(&info_dict).unwrap();
         let info = match info_dict.get("files") {
             Some(files) => {
@@ -260,10 +259,9 @@ impl MetaInfo {
                 let info = MultipleFileInfo::new_with_common_info(common_file_info, name, files)?;
                 FileInfo::MultipleFile(info)
             }
-            None => FileInfo::SingleFile(SingleFileInfo::new_with_common_info(
-                common_file_info,
-                &info_dict,
-            ).unwrap()),
+            None => FileInfo::SingleFile(
+                SingleFileInfo::new_with_common_info(common_file_info, &info_dict).unwrap(),
+            ),
         };
 
         let mut ret = MetaInfo::new(info, announce);
@@ -279,24 +277,16 @@ impl MetaInfo {
                         .collect();
                 }
                 "creation date" => {
-                    ret.creation_date = hashmap.get(key)
-                    .ok_or("err")?
-                    .convert_to_u64();
+                    ret.creation_date = hashmap.get(key).ok_or("err")?.convert_to_u64();
                 }
                 "comment" => {
-                    ret.comment = hashmap.get(key)
-                    .ok_or("err")?
-                    .convert_to_string();
+                    ret.comment = hashmap.get(key).ok_or("err")?.convert_to_string();
                 }
                 "created by" => {
-                    ret.created_by = hashmap.get(key)
-                    .ok_or("err")?
-                    .convert_to_string();
+                    ret.created_by = hashmap.get(key).ok_or("err")?.convert_to_string();
                 }
                 "encoding" => {
-                    ret.encoding = hashmap.get(key)
-                    .ok_or("err")?
-                    .convert_to_string();
+                    ret.encoding = hashmap.get(key).ok_or("err")?.convert_to_string();
                 }
                 _ => (),
             }
@@ -306,15 +296,15 @@ impl MetaInfo {
     }
 
     pub fn from_u8_len_check(bencode: &[u8]) -> Result<MetaInfo, &'static str> {
-        let element = decode_len_check(bencode)
-        .map_err(|_| "Failed to decode bencode with length check")?;
+        let element =
+            decode_len_check(bencode).map_err(|_| "Failed to decode bencode with length check")?;
         MetaInfo::from_element(&element)
     }
 
     #[allow(dead_code)]
     pub fn from_u8_no_len_check(bencode: &[u8]) -> Result<MetaInfo, &'static str> {
         let element = decode_no_len_check(bencode)
-        .map_err(|_| "Failed to decode bencode with length check")?;
+            .map_err(|_| "Failed to decode bencode with length check")?;
         MetaInfo::from_element(&element)
     }
 }
