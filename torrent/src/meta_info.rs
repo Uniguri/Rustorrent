@@ -63,25 +63,25 @@ impl CommonFileInfo {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Default)]
 pub struct SingleFileInfo {
     pub common_file_info: CommonFileInfo,
     pub name: String,
     pub length: usize,
-    pub md5sum: Result<String, &'static str>,
+    pub md5sum: Option<String>,
 }
 
 // Default trait for SingleFileInfo structure
-impl Default for SingleFileInfo {
-    fn default() -> Self {
-        SingleFileInfo {
-            common_file_info: Default::default(),
-            name: Default::default(),
-            length: Default::default(),
-            md5sum: Err("No MD5 sum"),
-        }
-    }
-}
+// impl Default for SingleFileInfo {
+//     fn default() -> Self {
+//         SingleFileInfo {
+//             common_file_info: Default::default(),
+//             name: Default::default(),
+//             length: Default::default(),
+//             md5sum: Err("No MD5 sum"),
+//         }
+//     }
+// }
 
 #[allow(dead_code)]
 impl SingleFileInfo {
@@ -92,8 +92,8 @@ impl SingleFileInfo {
         let name = info_dict.get("name").ok_or("err")?.convert_to_str()?;
         let length = info_dict.get("length").ok_or("err")?.convert_to_u64()? as usize;
         let md5sum = match info_dict.get("md5sum") {
-            Some(x) => x.convert_to_str(),
-            None => Err("No MD5 sum"),
+            Some(x) => Some(x.convert_to_str()?),
+            None => None,
         };
 
         Ok(SingleFileInfo {
@@ -101,40 +101,40 @@ impl SingleFileInfo {
             name: name.to_string(),
             length,
             md5sum: match md5sum {
-                Ok(x) => Ok(x.to_string()),
-                Err(err) => Err(err),
+                Some(x) => Some(x.to_string()),
+                None => None,
             },
         })
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Default)]
 pub struct MultipleFileInfoFile {
     pub length: usize,
     pub path: Vec<String>,
-    pub md5sum: Result<String, &'static str>,
+    pub md5sum: Option<String>,
 }
 
 // Default trait for MultipleFileInfoFile structure
-impl Default for MultipleFileInfoFile {
-    fn default() -> Self {
-        MultipleFileInfoFile {
-            length: Default::default(),
-            path: Default::default(),
-            md5sum: Err("No MD5 sum"),
-        }
-    }
-}
+// impl Default for MultipleFileInfoFile {
+//     fn default() -> Self {
+//         MultipleFileInfoFile {
+//             length: Default::default(),
+//             path: Default::default(),
+//             md5sum: Err("No MD5 sum"),
+//         }
+//     }
+// }
 
 #[allow(dead_code)]
 impl MultipleFileInfoFile {
-    pub fn new(length: usize, path: Vec<String>, md5sum: Result<&str, &'static str>) -> Self {
+    pub fn new(length: usize, path: Vec<String>, md5sum: Option<&str>) -> Self {
         MultipleFileInfoFile {
             length,
             path,
             md5sum: match md5sum {
-                Ok(x) => Ok(x.to_string()),
-                Err(err) => Err(err),
+                Some(x) => Some(x.to_string()),
+                None => None,
             },
         }
     }
@@ -150,8 +150,8 @@ impl MultipleFileInfoFile {
             .ok_or("err")?
             .convert_to_string_list()?;
         let md5sum = match info_dict.get("md5sum") {
-            Some(x) => x.convert_to_str(),
-            None => Err("err"),
+            Some(x) => Some(x.convert_to_str()?),
+            None => None,
         };
         Ok(MultipleFileInfoFile::new(length, path, md5sum))
     }
@@ -186,8 +186,8 @@ impl MultipleFileInfo {
                 .ok_or("err")?
                 .convert_to_string_list()?;
             let md5sum = match file_dict.get("md5sum") {
-                Some(x) => x.convert_to_str(),
-                None => Err("err"),
+                Some(x) => Some(x.convert_to_str()?),
+                None => None,
             };
 
             info.files
