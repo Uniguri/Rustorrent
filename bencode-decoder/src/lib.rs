@@ -42,7 +42,7 @@ impl Element {
         }
     }
 
-    pub fn convert_to_u64(&self) -> Result<u64, &str> {
+    pub fn convert_to_u64(&self) -> Result<u64, &'static str> {
         if let Ok(x) = self.convert_to_i64() {
             Ok(x as u64)
         } else {
@@ -50,7 +50,7 @@ impl Element {
         }
     }
 
-    pub fn convert_to_string_list(&self) -> Result<Vec<String>, &str> {
+    pub fn convert_to_string_list(&self) -> Result<Vec<String>, &'static str> {
         if let Element::List(x) = self {
             x.iter().map(|y| y.convert_to_string()).collect()
         } else {
@@ -58,7 +58,7 @@ impl Element {
         }
     }
 
-    pub fn convert_to_ref_list(&self) -> Result<&Vec<Element>, &str> {
+    pub fn convert_to_ref_list(&self) -> Result<&Vec<Element>, &'static str> {
         if let Element::List(x) = self {
             Ok(x)
         } else {
@@ -73,7 +73,7 @@ impl Element {
         }
     }
 
-    pub fn convert_to_ref_dict(&self) -> Result<&HashMap<String, Element>, &str> {
+    pub fn convert_to_ref_dict(&self) -> Result<&HashMap<String, Element>, &'static str> {
         if let Element::Dictionary(x) = self {
             Ok(x)
         } else {
@@ -81,7 +81,7 @@ impl Element {
         }
     }
 
-    pub fn convert_to_dict(&self) -> Result<HashMap<String, Element>, &str> {
+    pub fn convert_to_dict(&self) -> Result<HashMap<String, Element>, &'static str> {
         match self.convert_to_ref_dict() {
             Ok(x) => Ok(x.clone()),
             Err(err) => Err(err),
