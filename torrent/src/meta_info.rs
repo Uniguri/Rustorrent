@@ -1,5 +1,6 @@
 use core::str;
-use std::collections::HashMap;
+use std::{collections::HashMap, result};
+use sha1::{Sha1, Digest};
 
 use bencode_decoder::*;
 
@@ -319,5 +320,112 @@ impl MetaInfo {
         let element = decode_no_len_check(bencode)
             .map_err(|_| "Failed to decode bencode with length check")?;
         MetaInfo::from_element(&element)
+    }
+
+    pub fn calculate_info_hash(&self) -> Result<String, &str> {
+        let info_element = file_info_to_element(&self.info);
+        let mut info_bytes = Vec::new();
+
+        encode_element(&info_element, &mut info_bytes);
+
+        let mut hasher = Sha1::new();
+
+        hasher.update(info_bytes);
+
+        let result = hasher.finalize();
+        let calculated_info_hash = hex::encode(result).to_string();
+
+        Ok(calculated_info_hash)
+    }
+
+    pub fn calculate_left(&self) -> usize {
+        match &self.info {
+            FileInfo::SingleFile(single_file_info) => {
+                single_file_info.length
+            },
+            FileInfo::MultipleFile(multiple_file_info) => {
+                multiple_file_info.files.iter().map(|file| file.length).sum()
+            },
+        }
+    }
+}
+
+fn file_info_to_element(file_info: &FileInfo) -> Element {
+    let mut dict = HashMap::new();
+    
+    match file_info {
+        FileInfo::SingleFile(single) => {
+            dict.insert("name".to_string(), Element::ByteString(single.name.clone().into_bytes()));
+            dict.insert("length".to_string(), Element::Integer(single.length as i64));
+            dict.insert("piece length".to_string(), Element::Integer(single.common_file_info.piece_length as i64));
+            dict.insert("pieces".to_string(), Element::ByteString(single.common_file_info.pieces.concat()));
+
+            if single.common_file_info.is_private {
+                dict.insert("private".to_string(), Element::Integer(1));
+            }
+            if let Some(md5sum) = &single.md5sum {
+                dict.insert("md5sum".to_string(), Element::ByteString(md5sum.clone().into_bytes()));
+            }
+        }
+        FileInfo::MultipleFile(multi) => {
+            dict.insert("name".to_string(), Element::ByteString(multi.name.clone().into_bytes()));
+            dict.insert("piece length".to_string(), Element::Integer(multi.common_file_info.piece_length as i64));
+            dict.insert("pieces".to_string(), Element::ByteString(multi.common_file_info.pieces.concat()));
+
+            if multi.common_file_info.is_private {
+                dict.insert("private".to_string(), Element::Integer(1));
+            }
+
+            let mut files = Vec::new();
+
+            for file in &multi.files {
+                let mut file_dict = HashMap::new();
+
+                file_dict.insert("length".to_string(), Element::Integer(file.length as i64));
+                file_dict.insert("path".to_string(), Element::List(file.path.iter().map(|p| Element::ByteString(p.clone().into_bytes())).collect()));
+
+                if let Some(md5sum) = &file.md5sum {
+                    file_dict.insert("md5sum".to_string(), Element::ByteString(md5sum.clone().into_bytes()));
+                }
+
+                files.push(Element::Dictionary(file_dict));
+            }
+
+            dict.insert("files".to_string(), Element::List(files));
+        }
+    }
+
+    Element::Dictionary(dict)
+}
+
+fn encode_element(element: &Element, out: &mut Vec<u8>) {
+    match element {
+        Element::ByteString(data) => {
+            out.extend(data.len().to_string().as_bytes());
+            out.push(b':');
+            out.extend(data);
+        }
+        Element::Integer(data) => {
+            out.push(b'i');
+            out.extend(data.to_string().as_bytes());
+            out.push(b'e');
+        }
+        Element::List(elements) => {
+            out.push(b'l');
+            for elem in elements {
+                encode_element(elem, out);
+            }
+            out.push(b'e');
+        }
+        Element::Dictionary(dict) => {
+            out.push(b'd');
+            let mut sorted_keys: Vec<&String> = dict.keys().collect();
+            sorted_keys.sort();
+            for key in sorted_keys {
+                encode_element(&Element::ByteString(key.as_bytes().to_vec()), out);
+                encode_element(&dict[key], out);
+            }
+            out.push(b'e');
+        }
     }
 }
