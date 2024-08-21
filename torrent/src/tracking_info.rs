@@ -137,3 +137,17 @@ impl TrackerRequests {
     }
 }
 
+pub fn url_encode_for_sha1(input: &str) -> Result<String, &str> {
+    if input.len() != 40 {
+        return Err("Length of hash is not 20");
+    }
+
+    let mut encoded_string = String::new();
+    let bytes = input.as_bytes();
+
+    for i in (0..40).step_by(2) {
+        encoded_string.push_str(&format!("%{}{}", bytes[i] as char, bytes[i + 1] as char));
+    }
+
+    Ok(encoded_string)
+}

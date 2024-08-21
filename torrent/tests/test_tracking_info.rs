@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use torrent::meta_info::MetaInfo;
-use torrent::tracking_info::TrackerRequests;
+use torrent::tracking_info::{url_encode_for_sha1, TrackerRequests};
 
 #[test]
 fn test_tracking_info_01() {
@@ -62,7 +62,8 @@ fn test_tracker_request() {
     let metainfo = MetaInfo::from_u8_len_check(&file_content).expect("Failed to parse MetaInfo");
     let tracker_request = TrackerRequests::new(
         // TrackerRequests::calculate_sha1(&metainfo).unwrap(),
-        "%4d%29%c6%c0%2c%97%ca%ad%93%7d%8a%9b%66%b0%bb%1b%6f%7c%bb%fe".to_string(),
+        // "%4d%29%c6%c0%2c%97%ca%ad%93%7d%8a%9b%66%b0%bb%1b%6f%7c%bb%fe".to_string(),
+        url_encode_for_sha1(&metainfo.calculate_info_hash().expect("Failed to calculate info hash")).unwrap(),
         "12341234123412341234".to_string(),
         6881,
         0,
